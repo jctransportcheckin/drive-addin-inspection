@@ -1,0 +1,15 @@
+{
+    "name": "vehicleCheckIn",
+    "supportEmail": "support@geotab.com",
+    "version": "2.0.1",
+    "items": [
+        {
+            "url": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/index_launchpage.html",
+            "path": "DriveAppLink/",
+            "menuName": {
+                "en": "Vehicle Check-In"
+            },
+            "icon": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/icon.svg"
+        }
+    ]
+}

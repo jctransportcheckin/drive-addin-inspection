@@ -1,0 +1,23 @@
+{
+    "name": "Vehicle Inspection Reports",
+    "supportEmail": "support@geotab.com",
+    "version": "2.0.2",
+    "items": [
+        {
+            "url": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/dashboard.html",
+            "path": "ActivityLink/",
+            "menuName": {
+                "en": "Check-In Reports"
+            },
+            "icon": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/icon.svg"
+        },
+        {
+            "url": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/checklist-builder.html",
+            "path": "ActivityLink/",
+            "menuName": {
+                "en": "Checklist Builder"
+            },
+            "icon": "https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/icon.svg"
+        }
+    ]
+}
