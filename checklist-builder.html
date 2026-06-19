@@ -798,8 +798,8 @@ function saveChecklist() {
 function renderApiPreview() {}
 
 // ── Google Drive Integration ──────────────────────────────────────────────────
-const GD_CLIENT_ID     = '1079509518058-aicdrp0e2i9o19dogatjim2lajpufsid.apps.googleusercontent.com';
-const GD_CLIENT_SECRET = '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';
+const GD_CLIENT_ID     = '881778169019-n8466au9grp0abtbvvqshai889kpabrt.apps.googleusercontent.com';
+const GD_CLIENT_SECRET = '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';
 const GD_SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const GD_CONFIG_TYPE = 'GoogleDriveConfig';
 let GD_CONFIG = null; // { accessToken, refreshToken, email, expiresAt }
@@ -846,7 +846,7 @@ async function startGoogleAuth() {
 
   localStorage.setItem('gd_pkce_verifier', verifier);
 
-  const redirectUri = 'https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/oauth-callback.html';
+  const redirectUri = 'https://jctransportcheckin.github.io/drive-addin-inspection/oauth-callback.html';
   const scope = GD_SCOPES + ' https://www.googleapis.com/auth/userinfo.email';
   const url = 'https://accounts.google.com/o/oauth2/v2/auth'
     + '?client_id='             + encodeURIComponent(GD_CLIENT_ID)
@@ -915,7 +915,7 @@ function exchangeAuthCode(code) {
 
   toast('Code received — exchanging with Google…');
 
-  const redirectUri = 'https://bjornvandenwijngaert-tech.github.io/drive-addin-inspection/oauth-callback.html';
+  const redirectUri = 'https://jctransportcheckin.github.io/drive-addin-inspection/oauth-callback.html';
 
   fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
