@@ -333,6 +333,10 @@ geotab.addin.vehicleChecklistBuilder = function() {
       _api = api;
       if (state && state.database) {
         document.getElementById('dbBadge').textContent = state.database;
+      } else {
+        api.getSession(function(session) {
+          if (session && session.database) document.getElementById('dbBadge').textContent = session.database;
+        });
       }
       callback();
       loadFromApi();

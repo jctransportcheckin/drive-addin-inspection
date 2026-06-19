@@ -509,8 +509,12 @@ geotab.addin.vehicleChecklistDashboard = function() {
   return {
     initialize: function(api, state, callback) {
       _api = api;
-      if (state) {
-        if (state.database) document.getElementById('dbBadge').textContent = state.database;
+      if (state && state.database) {
+        document.getElementById('dbBadge').textContent = state.database;
+      } else {
+        api.getSession(function(session) {
+          if (session && session.database) document.getElementById('dbBadge').textContent = session.database;
+        });
       }
       callback();
       loadData();
