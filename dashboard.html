@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -851,7 +851,7 @@ function renderTable() {
             ? `<span class="text-red-600 font-semibold text-sm">${r.flaggedCount} issue${r.flaggedCount > 1 ? 's' : ''}</span>`
             : `<span class="text-slate-300 text-sm">—</span>`}
         </td>
-        <td class="px-5 py-3.5 text-slate-500 text-sm">${r.photoCount || 0} 📷</td>
+        <td class="px-5 py-3.5 text-slate-500 text-sm">${(r.photoCount || 0) + (r.items || []).reduce((s, i) => s + (i.gdItemPhotoIds ? i.gdItemPhotoIds.length : 0), 0)} 📷</td>
         <td class="px-4 py-3.5 text-slate-300">
           <svg class="w-4 h-4 transition-transform ${isExp ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </td>
@@ -891,8 +891,10 @@ function expandedRow(r) {
       }).join('')
     : '<p class="text-xs text-slate-400 py-4 text-center">No items recorded</p>';
 
-  const mediaIds   = r.mediaFileIds || [];
-  const photoCount = r.photoCount || mediaIds.length;
+  const mediaIds      = r.mediaFileIds || [];
+  const walkaroundCount = r.gdFileIds && r.gdFileIds.length ? r.gdFileIds.length : (r.photoCount || mediaIds.length);
+  const itemPhotoCount  = (r.items || []).reduce(function(s, i) { return s + (i.gdItemPhotoIds ? i.gdItemPhotoIds.length : 0); }, 0);
+  const photoCount      = walkaroundCount + itemPhotoCount;
 
   const photosHtml = photoCount > 0
     ? '<button onclick="openPhotoPopover(event,\'' + r.id + '\',' + photoCount + ')" '
@@ -1148,6 +1150,40 @@ function openPhotoPopover(event, responseId, photoCount) {
           + '&credentials={"userName":"' + userName + '","database":"' + database + '","sessionId":"' + sessionId + '"}';
       });
       renderPhotoThumbs();
+    });
+    return;
+  }
+
+  // Item-level fail photos (gdItemPhotoIds on each item) — shown when no walkaround photos
+  var allItemPhotoIds = [];
+  (response.items || []).forEach(function(item) {
+    if (item.gdItemPhotoIds && item.gdItemPhotoIds.length) {
+      item.gdItemPhotoIds.forEach(function(id) { allItemPhotoIds.push({ id: id, label: item.label }); });
+    }
+  });
+  if (allItemPhotoIds.length) {
+    gdRefreshToken(function(accessToken) {
+      _activePhotoSrcs = [];
+      var loaded = 0;
+      var total = allItemPhotoIds.length;
+      for (var j = 0; j < total; j++) _activePhotoSrcs.push(null);
+      allItemPhotoIds.forEach(function(entry, i) {
+        fetch('https://www.googleapis.com/drive/v3/files/' + entry.id + '?alt=media', {
+          headers: { 'Authorization': 'Bearer ' + accessToken }
+        })
+        .then(function(r) { return r.blob(); })
+        .then(function(blob) {
+          _activePhotoSrcs[i] = URL.createObjectURL(blob);
+          loaded++;
+          if (loaded === total) renderPhotoThumbs();
+        })
+        .catch(function() {
+          loaded++;
+          if (loaded === total) renderPhotoThumbs();
+        });
+      });
+    }, function() {
+      document.getElementById('photoPopoverGrid').innerHTML = '<p class="text-xs text-slate-400">Google Drive token expired — reconnect in Checklist Builder.</p>';
     });
     return;
   }
