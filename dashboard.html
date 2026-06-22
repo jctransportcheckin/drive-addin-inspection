@@ -154,7 +154,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;">
           <div style="width:24px;height:3px;border-radius:2px;background:repeating-linear-gradient(90deg,#cbd5e1 0,#cbd5e1 5px,transparent 5px,transparent 9px);"></div>
-          Previous 30 days
+          <span id="kpiPrevLabel">Previous period</span>
         </div>
         <button onclick="openKpiPanel()" style="font-size:11px;font-weight:600;color:#0047BB;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:4px 12px;cursor:pointer;">
           View detail →
@@ -646,6 +646,93 @@ function buildDayBuckets(responses, valueFn, days) {
   return buckets;
 }
 
+// Build hourly buckets for a single day
+function buildHourBuckets(responses, valueFn, date) {
+  var buckets = [];
+  for (var h = 0; h < 24; h++) {
+    var hour = h;
+    var label = (hour < 10 ? '0' : '') + hour + ':00';
+    var recs = responses.filter(function(r) {
+      var d = new Date(r.submittedAt);
+      return d.getFullYear() === date.getFullYear() && d.getMonth() === date.getMonth()
+          && d.getDate() === date.getDate() && d.getHours() === hour;
+    });
+    buckets.push({ label: label, value: valueFn(recs) });
+  }
+  return buckets;
+}
+
+// Build day buckets across an explicit from→to range
+function buildRangeDayBuckets(responses, valueFn, fromDate, toDate) {
+  var buckets = [];
+  var d = new Date(fromDate); d.setHours(0,0,0,0);
+  var end = new Date(toDate); end.setHours(0,0,0,0);
+  while (d <= end) {
+    var day = new Date(d);
+    var label = day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    var recs = responses.filter(function(r) {
+      var rd = new Date(r.submittedAt); rd.setHours(0,0,0,0);
+      return rd.getTime() === day.getTime();
+    });
+    buckets.push({ label: label, value: valueFn(recs) });
+    d.setDate(d.getDate() + 1);
+  }
+  return buckets;
+}
+
+// Build smart buckets for 'all' mode — picks daily/weekly/monthly based on data span
+function buildAllModeBuckets(responses, valueFn) {
+  if (!responses.length) return [];
+  var dates = responses.map(function(r) { return new Date(r.submittedAt); });
+  var minDate = new Date(Math.min.apply(null, dates)); minDate.setHours(0,0,0,0);
+  var maxDate = new Date(Math.max.apply(null, dates)); maxDate.setHours(23,59,59,999);
+  var spanDays = Math.round((maxDate - minDate) / (1000 * 60 * 60 * 24));
+  var buckets = [];
+
+  if (spanDays <= 60) {
+    // Daily buckets
+    return buildRangeDayBuckets(responses, valueFn, minDate, maxDate);
+
+  } else if (spanDays <= 730) {
+    // Weekly buckets — Monday-anchored
+    var d = new Date(minDate);
+    var dow = d.getDay(); // 0=Sun
+    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1)); // back to Monday
+    while (d <= maxDate) {
+      var wStart = new Date(d);
+      var wEnd   = new Date(d); wEnd.setDate(wEnd.getDate() + 6); wEnd.setHours(23,59,59,999);
+      var label  = wStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      var recs   = responses.filter(function(r) {
+        var rd = new Date(r.submittedAt);
+        return rd >= wStart && rd <= wEnd;
+      });
+      buckets.push({ label: label, value: valueFn(recs) });
+      d.setDate(d.getDate() + 7);
+    }
+
+  } else {
+    // Monthly buckets (cap: 36 months shown, then quarterly)
+    var totalMonths = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + (maxDate.getMonth() - minDate.getMonth()) + 1;
+    var step = totalMonths > 36 ? 3 : 1; // quarterly if >3 years
+    var d2 = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    var endM = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+    while (d2 <= endM) {
+      var mStart = new Date(d2);
+      var mEnd   = new Date(d2.getFullYear(), d2.getMonth() + step, 0); mEnd.setHours(23,59,59,999);
+      var label  = step === 1
+        ? d2.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+        : d2.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) + '–' + mEnd.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+      var recs   = responses.filter(function(r) {
+        var rd = new Date(r.submittedAt);
+        return rd >= mStart && rd <= mEnd;
+      });
+      buckets.push({ label: label, value: valueFn(recs) });
+      d2.setMonth(d2.getMonth() + step);
+    }
+  }
+  return buckets;
+}
+
 function getValueFn(key) {
   if (key === 'submissions') return function(recs) { return recs.length; };
   if (key === 'passrate')    return function(recs) {
@@ -661,11 +748,8 @@ function getValueFn(key) {
 function renderKpiChart() {
   var meta = KPI_META[_kpiTileIndex];
   var valueFn = getValueFn(meta.key);
-  var now = new Date();
 
-  // Use filtered data (vehicle/driver/status active) but always show full 30-day window
-  var chartBase = filtered.length ? filtered : RESPONSES;
-  // Previous period needs same vehicle/driver filter but extended back 60 days — so use RESPONSES filtered by non-date criteria
+  // Base dataset respects vehicle/driver/status filters — same non-date base for prev period lookup
   var fV  = document.getElementById('fVehicle') ? document.getElementById('fVehicle').value : '';
   var fDr = document.getElementById('fDriver')  ? document.getElementById('fDriver').value  : '';
   var fS  = document.getElementById('fStatus')  ? document.getElementById('fStatus').value  : '';
@@ -675,25 +759,72 @@ function renderKpiChart() {
     if (fS  && r.overallStatus !== fS)  return false;
     return true;
   });
-  // This period: last 30 days from the non-date-filtered base
-  var current = buildDayBuckets(baseNoDate, valueFn, 30);
-  // Previous period: 31-60 days ago
-  var prevStart = new Date(now); prevStart.setDate(now.getDate() - 59);
-  var prevRecs = baseNoDate.filter(function(r) {
-    var d = new Date(r.submittedAt);
-    return d >= prevStart && d < new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
-  });
-  var previous = buildDayBuckets(prevRecs, valueFn, 30);
+
+  var current = [], previous = [], chartTitle = meta.title, prevLabel = '', showPrev = true;
+
+  if (CAL.mode === 'day') {
+    // Hourly buckets for selected day, previous = same hours yesterday
+    var selDay = CAL.selected;
+    var prevDay = new Date(selDay); prevDay.setDate(prevDay.getDate() - 1);
+    current  = buildHourBuckets(baseNoDate, valueFn, selDay);
+    previous = buildHourBuckets(baseNoDate, valueFn, prevDay);
+    chartTitle = meta.title + ' — ' + selDay.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    prevLabel  = prevDay.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+  } else if (CAL.mode === 'week') {
+    var wr = getWeekRange(CAL.selected);
+    var wFrom = new Date(wr.from); wFrom.setHours(0,0,0,0);
+    var wTo   = new Date(wr.to);   wTo.setHours(23,59,59,999);
+    var prevWTo   = new Date(wFrom); prevWTo.setDate(prevWTo.getDate() - 1);   prevWTo.setHours(23,59,59,999);
+    var prevWFrom = new Date(prevWTo); prevWFrom.setDate(prevWFrom.getDate() - 6); prevWFrom.setHours(0,0,0,0);
+    current  = buildRangeDayBuckets(baseNoDate, valueFn, wFrom, wTo);
+    previous = buildRangeDayBuckets(baseNoDate, valueFn, prevWFrom, prevWTo);
+    chartTitle = meta.title + ' — ' + wFrom.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' – ' + wTo.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    prevLabel  = prevWFrom.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' – ' + prevWTo.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+
+  } else if (CAL.mode === 'month') {
+    var y = CAL.selected.getFullYear(), m = CAL.selected.getMonth();
+    var mFrom = new Date(y, m, 1);
+    var mTo   = new Date(y, m + 1, 0); // last day of month
+    var prevMFrom = new Date(y, m - 1, 1);
+    var prevMTo   = new Date(y, m, 0);
+    current  = buildRangeDayBuckets(baseNoDate, valueFn, mFrom, mTo);
+    previous = buildRangeDayBuckets(baseNoDate, valueFn, prevMFrom, prevMTo);
+    chartTitle = meta.title + ' — ' + mFrom.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    prevLabel  = prevMFrom.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  } else if (CAL.mode === 'custom' && CAL.customFrom && CAL.customTo) {
+    var cFrom = new Date(CAL.customFrom); cFrom.setHours(0,0,0,0);
+    var cTo   = new Date(CAL.customTo);   cTo.setHours(23,59,59,999);
+    var spanMs = cTo - cFrom;
+    var prevCTo   = new Date(cFrom); prevCTo.setMilliseconds(prevCTo.getMilliseconds() - 1);
+    var prevCFrom = new Date(prevCTo - spanMs); prevCFrom.setHours(0,0,0,0);
+    current  = buildRangeDayBuckets(baseNoDate, valueFn, cFrom, cTo);
+    previous = buildRangeDayBuckets(baseNoDate, valueFn, prevCFrom, prevCTo);
+    chartTitle = meta.title + ' — ' + cFrom.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' – ' + cTo.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    prevLabel  = prevCFrom.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' – ' + prevCTo.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+
+  } else {
+    // All dates — smart buckets (daily/weekly/monthly) based on data span, no previous period
+    current   = buildAllModeBuckets(baseNoDate, valueFn);
+    previous  = [];
+    showPrev  = false;
+    chartTitle = meta.title + ' — All time';
+  }
 
   var labels  = current.map(function(b) { return b.label; });
   var curData = current.map(function(b) { return b.value; });
-  var prvData = previous.map(function(b) { return b.value; });
+  var prvData = previous.map(function(b) { return b.value !== undefined ? b.value : null; });
 
-  // Update legend dot + title
+  // Update legend + title
   var dot = document.getElementById('kpiLegendDot');
   if (dot) dot.style.background = meta.color;
+  var prevLbl = document.getElementById('kpiPrevLabel');
+  if (prevLbl) prevLbl.textContent = prevLabel ? prevLabel : 'Previous period';
+  var prevLegend = prevLbl ? prevLbl.closest('div') : null;
+  if (prevLegend) prevLegend.style.display = showPrev ? 'flex' : 'none';
   var title = document.getElementById('kpiChartTitle');
-  if (title) title.textContent = meta.title + ' — Last 30 days';
+  if (title) title.textContent = chartTitle;
 
   var ctx = document.getElementById('kpiChart').getContext('2d');
 
@@ -701,15 +832,33 @@ function renderKpiChart() {
   var rgb = meta.color.replace('#','');
   var r = parseInt(rgb.slice(0,2),16), g = parseInt(rgb.slice(2,4),16), b = parseInt(rgb.slice(4,6),16);
 
+  // Current period gradient (line chart fill)
   var gradient = ctx.createLinearGradient(0, 0, 0, 160);
   gradient.addColorStop(0, 'rgba('+r+','+g+','+b+',0.18)');
   gradient.addColorStop(1, 'rgba('+r+','+g+','+b+',0.0)');
 
+  // Previous period: lighter shade of the same colour
+  var prevColor      = 'rgba('+r+','+g+','+b+',0.25)';
+  var prevColorLine  = 'rgba('+r+','+g+','+b+',0.35)';
+
+  // ds1 (previous) comes FIRST so it renders behind ds0 (current)
+  var ds1 = {
+    label: 'Previous period',
+    data: showPrev ? prvData : [],
+    borderColor: prevColorLine,
+    borderWidth: isLine ? 1.5 : 0,
+    borderRadius: isLine ? 0 : 4,
+    backgroundColor: isLine ? 'transparent' : prevColor,
+    fill: false,
+    tension: 0.4,
+    pointRadius: 0,
+    spanGaps: true
+  };
   var ds0 = {
     label: 'This period',
     data: curData,
     borderColor: meta.color,
-    borderWidth: isLine ? 2 : 1.5,
+    borderWidth: isLine ? 2 : 0,
     borderRadius: isLine ? 0 : 4,
     backgroundColor: isLine ? gradient : 'rgba('+r+','+g+','+b+',0.75)',
     fill: isLine,
@@ -718,22 +867,8 @@ function renderKpiChart() {
     pointHoverRadius: isLine ? 5 : 0,
     spanGaps: true
   };
-  var ds1 = {
-    label: 'Previous period',
-    data: prvData,
-    borderColor: '#cbd5e1',
-    borderWidth: 1.5,
-    borderDash: [5, 4],
-    borderRadius: 4,
-    backgroundColor: isLine ? 'transparent' : 'rgba(203,213,225,0.45)',
-    fill: false,
-    tension: 0.4,
-    pointRadius: 0,
-    spanGaps: true
-  };
 
   var canvasEl = document.getElementById('kpiChart');
-  // Set explicit pixel dimensions so Chart.js doesn't depend on container measurement
   var chartW = (canvasEl.parentElement ? canvasEl.parentElement.offsetWidth : 800) || 800;
   canvasEl.width  = chartW;
   canvasEl.height = 160;
@@ -757,15 +892,9 @@ function renderKpiChart() {
   };
 
   if (_kpiChart) {
-    _kpiChart.config.type = meta.type;
-    _kpiChart.data.labels = labels;
-    _kpiChart.data.datasets[0] = ds0;
-    _kpiChart.data.datasets[1] = ds1;
-    Object.assign(_kpiChart.options, opts);
-    _kpiChart.update();
-  } else {
-    _kpiChart = new Chart(ctx, { type: meta.type, data: { labels: labels, datasets: [ds0, ds1] }, options: opts });
+    _kpiChart.destroy();
   }
+  _kpiChart = new Chart(ctx, { type: meta.type, data: { labels: labels, datasets: [ds1, ds0] }, options: opts });
 }
 
 // "View detail" button — opens whichever panel matches active tile
