@@ -221,6 +221,12 @@
           <option value="pass">Pass only</option>
           <option value="fail">Fail only</option>
         </select>
+        <select id="fTripType" onchange="applyFilters()" class="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 text-slate-600 bg-white">
+          <option value="">All trip types</option>
+          <option value="pre">Pre-trip</option>
+          <option value="post">Post-trip</option>
+          <option value="any">General</option>
+        </select>
         <button onclick="clearFilters()" class="text-xs text-slate-400 hover:text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">Clear</button>
         <span id="filterCount" class="text-xs text-slate-400"></span>
         <button onclick="confirmExportAll()" class="ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg text-white btn-primary">
@@ -1318,6 +1324,7 @@ function applyFilters() {
   const fV  = document.getElementById('fVehicle').value;
   const fDr = document.getElementById('fDriver').value;
   const fS  = document.getElementById('fStatus').value;
+  const fTT = document.getElementById('fTripType') ? document.getElementById('fTripType').value : '';
 
   filtered = RESPONSES.filter(function(r) {
     const dt = new Date(r.submittedAt);
@@ -1338,9 +1345,10 @@ function applyFilters() {
       if (dt < from || dt > to) return false;
     }
 
-    if (fV  && r.deviceName !== fV)    return false;
-    if (fDr && r.driverName !== fDr)   return false;
-    if (fS  && r.overallStatus !== fS) return false;
+    if (fV  && r.deviceName    !== fV)  return false;
+    if (fDr && r.driverName    !== fDr) return false;
+    if (fS  && r.overallStatus !== fS)  return false;
+    if (fTT && (r.tripType || 'any')   !== fTT) return false;
     return true;
   });
   expandedId = null;
@@ -1352,7 +1360,7 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['fVehicle','fDriver','fStatus'].forEach(function(id) {
+  ['fVehicle','fDriver','fStatus','fTripType'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
   CAL.mode = 'all';
