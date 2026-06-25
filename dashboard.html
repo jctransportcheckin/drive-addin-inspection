@@ -166,6 +166,41 @@
     </div>
   </div>
 
+  <!-- Compliance card -->
+  <div id="complianceCard" style="background:white;border-radius:14px;border:1px solid #d1dae8;box-shadow:0 2px 8px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04);padding:16px 24px;margin-bottom:16px;display:flex;align-items:center;gap:32px;">
+    <div style="flex-shrink:0;text-align:center;min-width:80px;">
+      <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin:0 0 6px 0;">Compliance</p>
+      <p id="compliancePct" style="font-size:2rem;font-weight:800;line-height:1;color:#16a34a;margin:0;">—</p>
+    </div>
+    <div style="width:1px;background:#e8edf4;align-self:stretch;"></div>
+    <div style="display:flex;gap:24px;flex:1;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0;"></div>
+        <div>
+          <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin:0;">Compliant</p>
+          <p id="complianceGood" style="font-size:18px;font-weight:800;color:#16a34a;margin:0;">—</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></div>
+        <div>
+          <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin:0;">Late Check-In</p>
+          <p id="complianceLate" style="font-size:18px;font-weight:800;color:#f59e0b;margin:0;">—</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#dc2626;flex-shrink:0;"></div>
+        <div>
+          <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin:0;">Missing</p>
+          <p id="complianceMissing" style="font-size:18px;font-weight:800;color:#dc2626;margin:0;">—</p>
+        </div>
+      </div>
+    </div>
+    <div style="width:1px;background:#e8edf4;align-self:stretch;"></div>
+    <p id="complianceNote" style="font-size:11px;color:#94a3b8;flex-shrink:0;max-width:180px;line-height:1.5;">Loading trip data…</p>
+    <button onclick="openCompliancePanel()" style="flex-shrink:0;font-size:11px;font-weight:600;color:#0047BB;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 14px;cursor:pointer;">View detail →</button>
+  </div>
+
   <!-- 75/25 split -->
   <div style="display:flex;gap:20px;align-items:flex-start;">
 
@@ -411,22 +446,53 @@
   <div id="passRatePanelBody" style="padding:24px;overflow-y:scroll;flex:1;"></div>
 </div>
 
+<!-- ═══ COMPLIANCE PANEL ══════════════════════════════════════════════════════ -->
+<div id="compliancePanel" style="position:fixed;top:50px;right:0;bottom:0;width:75%;z-index:200;display:none;background:#f8fafc;flex-direction:column;overflow:hidden;box-shadow:-8px 0 40px rgba(0,0,0,0.15);">
+  <div style="background:#0047BB;color:white;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin:0;">Compliance Detail</h2>
+      <p id="compliancePanelSubtitle" style="font-size:13px;opacity:0.7;margin:4px 0 0 0;"></p>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <!-- Status filter -->
+      <select id="compliancePanelFilter" onchange="renderCompliancePanel()" style="font-size:12px;font-weight:600;background:white;color:#0047BB;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">
+        <option value="">All</option>
+        <option value="compliant">Compliant</option>
+        <option value="late">Late</option>
+        <option value="missing">Missing</option>
+        <option value="unassigned">Unassigned Driver</option>
+      </select>
+      <button onclick="closeCompliancePanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:16px;">×</button>
+    </div>
+  </div>
+  <div id="compliancePanelBody" style="padding:16px;overflow-y:scroll;flex:1;max-width:1200px;margin:0 auto;width:100%;"></div>
+</div>
+
 <!-- ═══ ISSUES PANEL ═══════════════════════════════════════════════════════════ -->
 <div id="issuesPanel" style="position:fixed;top:50px;right:0;bottom:0;width:75%;z-index:200;display:none;background:#f8fafc;flex-direction:column;overflow:hidden;box-shadow:-8px 0 40px rgba(0,0,0,0.15);">
     <!-- Header -->
-    <div style="background:#0047BB;color:white;padding:20px 24px 20px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-sizing:border-box;">
-      <div>
-        <h2 style="font-size:18px;font-weight:700;margin:0;">Issues Flagged</h2>
-        <p id="issuesPanelSubtitle" style="font-size:13px;opacity:0.7;margin:4px 0 0 0;"></p>
+    <div style="background:#0047BB;color:white;padding:20px 24px 0 20px;flex-shrink:0;box-sizing:border-box;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;margin:0;">Issues Flagged</h2>
+          <p id="issuesPanelSubtitle" style="font-size:13px;opacity:0.7;margin:4px 0 0 0;"></p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="issuesRaiseBtn" onclick="openRaiseIssueModal()" style="background:white;color:#0047BB;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;">+ Raise Issue</button>
+          <button id="issuesExportBtn" onclick="openIssueExportModal()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Export ↓</button>
+          <button onclick="closeIssuesPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:16px;">×</button>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button onclick="openRaiseIssueModal()" style="background:white;color:#0047BB;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;">+ Raise Issue</button>
-        <button onclick="openIssueExportModal()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Export ↓</button>
-        <button onclick="closeIssuesPanel()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:16px;">×</button>
+      <!-- Tabs -->
+      <div style="display:flex;gap:4px;">
+        <button id="issuesTab-pipeline" onclick="switchIssuesTab('pipeline')" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;border-radius:8px 8px 0 0;cursor:pointer;background:white;color:#0047BB;">Issue Pipeline</button>
+        <button id="issuesTab-frequency" onclick="switchIssuesTab('frequency')" style="padding:8px 18px;font-size:13px;font-weight:600;border:none;border-radius:8px 8px 0 0;cursor:pointer;background:rgba(255,255,255,0.2);color:white;">Failure Frequency</button>
       </div>
     </div>
-    <!-- Body -->
+    <!-- Pipeline body -->
     <div id="issuesPanelBody" style="padding:16px;overflow-y:scroll;flex:1;max-width:1200px;margin:0 auto;width:100%;"></div>
+    <!-- Frequency body -->
+    <div id="issuesFreqBody" style="display:none;padding:16px;overflow-y:scroll;flex:1;max-width:1200px;margin:0 auto;width:100%;"></div>
 </div>
 
 <!-- ═══ RAISE ISSUE MODAL ═══════════════════════════════════════════════════════ -->
@@ -597,6 +663,281 @@ function renderKPIs(data) {
   document.getElementById('kpiPhotosLabel').textContent = 'Avg ' + avg + ' per check';
 }
 
+// ── Compliance ────────────────────────────────────────────────────────────────
+var _complianceAbort = null;
+var _complianceRows  = []; // cached rows from last renderCompliance() call
+
+function renderCompliance() {
+  if (_complianceAbort) { _complianceAbort = true; }
+  var abort = { cancelled: false };
+  _complianceAbort = abort;
+
+  document.getElementById('compliancePct').textContent     = '—';
+  document.getElementById('complianceGood').textContent    = '—';
+  document.getElementById('complianceLate').textContent    = '—';
+  document.getElementById('complianceMissing').textContent = '—';
+  document.getElementById('complianceNote').textContent    = 'Loading trip data…';
+
+  if (!_api) return;
+
+  // Build date range from active calendar filter
+  var fromDate = null, toDate = null;
+  var now = new Date();
+  if (CAL.mode === 'day') {
+    fromDate = new Date(CAL.selected); fromDate.setHours(0,0,0,0);
+    toDate   = new Date(CAL.selected); toDate.setHours(23,59,59,999);
+  } else if (CAL.mode === 'week') {
+    var wr = getWeekRange(CAL.selected);
+    fromDate = new Date(wr.from); fromDate.setHours(0,0,0,0);
+    toDate   = new Date(wr.to);   toDate.setHours(23,59,59,999);
+  } else if (CAL.mode === 'month') {
+    fromDate = new Date(CAL.selected.getFullYear(), CAL.selected.getMonth(), 1);
+    toDate   = new Date(CAL.selected.getFullYear(), CAL.selected.getMonth() + 1, 0, 23, 59, 59, 999);
+  } else if (CAL.mode === 'custom' && CAL.customFrom && CAL.customTo) {
+    fromDate = new Date(CAL.customFrom); fromDate.setHours(0,0,0,0);
+    toDate   = new Date(CAL.customTo);   toDate.setHours(23,59,59,999);
+  } else {
+    // All — use span of existing data
+    if (RESPONSES.length) {
+      var dates = RESPONSES.map(function(r) { return new Date(r.submittedAt); });
+      fromDate = new Date(Math.min.apply(null, dates)); fromDate.setHours(0,0,0,0);
+      toDate   = new Date(Math.max.apply(null, dates)); toDate.setHours(23,59,59,999);
+    } else {
+      fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      toDate   = new Date(now);
+    }
+  }
+
+  // Active vehicle/driver filters
+  var fV  = document.getElementById('fVehicle') ? document.getElementById('fVehicle').value : '';
+  var fDr = document.getElementById('fDriver')  ? document.getElementById('fDriver').value  : '';
+
+  // Query trips from MyGeotab
+  var tripSearch = { fromDate: fromDate.toISOString(), toDate: toDate.toISOString() };
+  if (fV) {
+    // Find device ID matching the vehicle name
+    var matchDevice = RESPONSES.find(function(r) { return r.deviceName === fV; });
+    if (matchDevice && matchDevice.deviceId) tripSearch.deviceSearch = { id: matchDevice.deviceId };
+  }
+
+  _api.call('Get', { typeName: 'Trip', search: tripSearch }, function(trips) {
+    if (abort.cancelled) return;
+
+    // Build set of known driver IDs from submissions — anything not in here is unassigned/unknown
+    var knownDriverIds = new Set(RESPONSES.map(function(r) { return r.driverId; }).filter(Boolean));
+
+    // Group trips by driver+day — key: "driverId|YYYY-MM-DD"
+    var tripDays = {};
+    (trips || []).forEach(function(t) {
+      if (!t.start) return;
+      var driverId = (t.driver && t.driver.id) ? t.driver.id : '';
+      var deviceId = (t.device && t.device.id) ? t.device.id : '';
+      var isUnassigned = !driverId || !knownDriverIds.has(driverId);
+      var day    = t.start.slice(0, 10);
+      var key    = (isUnassigned ? 'unassigned' : driverId) + '|' + day + '|' + deviceId;
+      var start  = new Date(t.start);
+      if (!tripDays[key] || start < tripDays[key].firstTripStart) {
+        tripDays[key] = { firstTripStart: start, driverId: driverId, deviceId: deviceId, isUnassigned: isUnassigned };
+      }
+    });
+
+    // Filter to active driver filter if set
+    if (fDr) {
+      var matchDriver = RESPONSES.find(function(r) { return r.driverName === fDr; });
+      var matchDriverId = matchDriver ? matchDriver.driverId : null;
+      Object.keys(tripDays).forEach(function(k) {
+        var d = tripDays[k];
+        if (d.isUnassigned || d.driverId !== matchDriverId) delete tripDays[k];
+      });
+    }
+
+    // Build known driver ID → name map from submissions
+    var driverNames = {};
+    RESPONSES.forEach(function(r) { if (r.driverId && r.driverName) driverNames[r.driverId] = r.driverName; });
+
+    var good = 0, late = 0, missing = 0, unassigned = 0;
+    _complianceRows = [];
+
+    Object.keys(tripDays).forEach(function(k) {
+      var parts     = k.split('|');
+      var day       = parts[1];
+      var data      = tripDays[k];
+      var firstTrip = data.firstTripStart;
+
+      if (data.isUnassigned) {
+        // Find vehicle name for context
+        var vMatch = RESPONSES.find(function(r) { return r.deviceId === data.deviceId; });
+        var vName  = vMatch ? vMatch.deviceName : (data.deviceId || '—');
+        unassigned++;
+        _complianceRows.push({
+          driverName: 'Unassigned Driver',
+          vehicleName: vName,
+          day: day,
+          firstTrip: firstTrip,
+          submissionTime: null,
+          status: 'unassigned'
+        });
+        return;
+      }
+
+      var driverName = driverNames[data.driverId] || data.driverId;
+
+      // Find submissions by this driver on this day
+      var daySubs = RESPONSES.filter(function(r) {
+        return r.driverId === data.driverId && r.submittedAt.slice(0, 10) === day;
+      });
+
+      var status, submissionTime = null, vehicleName = '—', tripType = null;
+      if (daySubs.length) {
+        var earliest = daySubs.reduce(function(best, r) {
+          return new Date(r.submittedAt) < new Date(best.submittedAt) ? r : best;
+        });
+        submissionTime = new Date(earliest.submittedAt);
+        vehicleName    = earliest.deviceName || '—';
+        tripType       = earliest.tripType || null;
+        status = submissionTime <= firstTrip ? 'compliant' : 'late';
+        if (status === 'compliant') good++; else late++;
+      } else {
+        var anyMatch = RESPONSES.find(function(r) { return r.driverId === data.driverId; });
+        vehicleName = anyMatch ? anyMatch.deviceName : '—';
+        status = 'missing';
+        missing++;
+      }
+
+      _complianceRows.push({ driverName: driverName, vehicleName: vehicleName, day: day, firstTrip: firstTrip, submissionTime: submissionTime, status: status, tripType: tripType });
+    });
+
+    // Sort by day desc, then driver name
+    _complianceRows.sort(function(a, b) { return b.day.localeCompare(a.day) || a.driverName.localeCompare(b.driverName); });
+
+    var total = good + late + missing; // excludes unassigned from % calculation
+    var pct   = total > 0 ? Math.round(good / total * 100) : 0;
+    var pctEl = document.getElementById('compliancePct');
+    pctEl.textContent = total > 0 ? pct + '%' : 'N/A';
+    pctEl.style.color = pct >= 90 ? '#16a34a' : pct >= 70 ? '#f59e0b' : '#dc2626';
+    document.getElementById('complianceGood').textContent    = good;
+    document.getElementById('complianceLate').textContent    = late;
+    document.getElementById('complianceMissing').textContent = missing;
+    document.getElementById('complianceNote').textContent    = total + ' driver-day' + (total !== 1 ? 's' : '') + ' with trips' + (unassigned ? ' · ' + unassigned + ' unassigned' : '') + '.';
+  }, function() {
+    if (abort.cancelled) return;
+    document.getElementById('complianceNote').textContent = 'Could not load trip data.';
+  });
+}
+
+function openCompliancePanel() {
+  document.getElementById('compliancePanel').style.display = 'flex';
+  document.getElementById('compliancePanelFilter').value = '';
+  renderCompliancePanel();
+}
+
+function closeCompliancePanel() {
+  document.getElementById('compliancePanel').style.display = 'none';
+}
+
+function renderCompliancePanel() {
+  var body   = document.getElementById('compliancePanelBody');
+  var sub    = document.getElementById('compliancePanelSubtitle');
+  var filter = document.getElementById('compliancePanelFilter').value;
+
+  if (!_complianceRows.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px;color:#94a3b8;">No trip data loaded yet. Apply filters and wait for the compliance card to update first.</div>';
+    return;
+  }
+
+  // Split assigned vs unassigned — unassigned always go to separate section
+  var assignedRows   = _complianceRows.filter(function(r) { return r.status !== 'unassigned'; });
+  var unassignedRows = _complianceRows.filter(function(r) { return r.status === 'unassigned'; });
+  var rows = filter === 'unassigned' ? unassignedRows
+           : filter ? assignedRows.filter(function(r) { return r.status === filter; })
+           : assignedRows;
+  sub.textContent = rows.length + ' record' + (rows.length !== 1 ? 's' : '') + (filter && filter !== 'unassigned' ? ' · ' + filter : '')
+    + (unassignedRows.length && filter !== 'unassigned' ? ' · ' + unassignedRows.length + ' unassigned trips below' : '');
+
+  var STATUS_CFG = {
+    compliant:  { label: 'Compliant',          bg: '#dcfce7', color: '#15803d' },
+    late:       { label: 'Late',               bg: '#fef9c3', color: '#a16207' },
+    missing:    { label: 'Missing',            bg: '#fee2e2', color: '#dc2626' },
+    unassigned: { label: 'Unassigned Driver',  bg: '#f1f5f9', color: '#64748b' }
+  };
+
+  if (!rows.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px;color:#94a3b8;">No records match this filter.</div>';
+    return;
+  }
+
+  var TRIP_LABELS = { pre: 'Pre-trip', post: 'Post-trip', any: 'General' };
+  var TRIP_COLOURS = { pre: '#2563eb', post: '#16a34a', any: '#64748b' };
+
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Driver</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Vehicle</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Date</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Trip</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">First Trip</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Check-In Time</th>'
+    + '<th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Status</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(row, i) {
+    var cfg  = STATUS_CFG[row.status] || STATUS_CFG.missing;
+    var bg   = i % 2 === 0 ? 'white' : '#f8fafc';
+    var firstTripStr = row.firstTrip.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    var subStr = row.submissionTime
+      ? row.submissionTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : '—';
+    var dateStr = new Date(row.day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    var driverStyle = row.status === 'unassigned' ? 'color:#64748b;font-style:italic;' : 'font-weight:600;color:#1e293b;';
+    var tripLabel  = row.tripType ? (TRIP_LABELS[row.tripType] || row.tripType) : '—';
+    var tripColour = row.tripType ? (TRIP_COLOURS[row.tripType] || '#64748b') : '#94a3b8';
+
+    html += '<tr style="background:' + bg + ';border-bottom:1px solid #f1f5f9;">'
+      + '<td style="padding:10px 14px;' + driverStyle + '">' + row.driverName + '</td>'
+      + '<td style="padding:10px 14px;color:#475569;">' + row.vehicleName + '</td>'
+      + '<td style="padding:10px 14px;color:#475569;">' + dateStr + '</td>'
+      + '<td style="padding:10px 14px;">'
+      + (row.tripType ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + tripColour + '1a;color:' + tripColour + ';">' + tripLabel + '</span>' : '<span style="color:#94a3b8;">—</span>')
+      + '</td>'
+      + '<td style="padding:10px 14px;color:#475569;">' + firstTripStr + '</td>'
+      + '<td style="padding:10px 14px;color:#475569;">' + subStr + '</td>'
+      + '<td style="padding:10px 14px;">'
+      + '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:' + cfg.bg + ';color:' + cfg.color + ';">' + cfg.label + '</span>'
+      + '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+
+  // Unassigned trips — collapsed section at the bottom (hidden when filtering by unassigned, shown inline then)
+  if (unassignedRows.length && filter !== 'unassigned') {
+    html += '<details style="margin-top:20px;background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">'
+      + '<summary style="padding:14px 16px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">'
+      + '<span>⚠ ' + unassignedRows.length + ' trip' + (unassignedRows.length !== 1 ? 's' : '') + ' with unassigned driver</span>'
+      + '<span style="font-size:11px;font-weight:400;color:#94a3b8;">These are excluded from the compliance %</span>'
+      + '</summary>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+      + '<thead><tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">'
+      + '<th style="text-align:left;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Vehicle</th>'
+      + '<th style="text-align:left;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">Date</th>'
+      + '<th style="text-align:left;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;">First Trip</th>'
+      + '</tr></thead><tbody>';
+
+    unassignedRows.forEach(function(row, i) {
+      var bg = i % 2 === 0 ? 'white' : '#f8fafc';
+      var firstTripStr = row.firstTrip.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      var dateStr = new Date(row.day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      html += '<tr style="background:' + bg + ';border-bottom:1px solid #f1f5f9;">'
+        + '<td style="padding:8px 14px;color:#64748b;">' + row.vehicleName + '</td>'
+        + '<td style="padding:8px 14px;color:#94a3b8;">' + dateStr + '</td>'
+        + '<td style="padding:8px 14px;color:#94a3b8;">' + firstTripStr + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></details>';
+  }
+
+  body.innerHTML = html;
+}
+
 // ── KPI Chart ─────────────────────────────────────────────────────────────────
 var _kpiChart = null;
 var _kpiTileIndex = 0;
@@ -604,7 +945,7 @@ var _kpiTileIndex = 0;
 var KPI_META = [
   { title: 'Total Submissions',      color: '#0047BB', type: 'bar',  unit: '',  key: 'submissions' },
   { title: 'Pass Rate',              color: '#16a34a', type: 'line', unit: '%', key: 'passrate'    },
-  { title: 'Issues Flagged',         color: '#dc2626', type: 'bar',  unit: '',  key: 'issues'      },
+  { title: 'Issues Flagged',         color: '#dc2626', type: 'bar',  unit: '',  key: 'issues', freqChart: true },
   { title: 'Photos Captured',        color: '#0284c7', type: 'bar',  unit: '',  key: 'photos'      },
   { title: 'Between-Trip Incidents', color: '#ea580c', type: 'bar',  unit: '',  key: 'incidents'   }
 ];
@@ -745,8 +1086,77 @@ function getValueFn(key) {
   return function(recs) { return recs.length; };
 }
 
+function renderKpiChartFrequency() {
+  // Item failure frequency chart — one bar per failed item, no time axis, no previous period
+  var meta = KPI_META[_kpiTileIndex];
+
+  // Hide previous period legend
+  var prevLegend = document.getElementById('kpiPrevLabel');
+  if (prevLegend) prevLegend.closest('div').style.display = 'none';
+  var title = document.getElementById('kpiChartTitle');
+  if (title) title.textContent = 'Item Failure Frequency';
+
+  // Aggregate from filtered
+  var itemMap = {};
+  filtered.forEach(function(r) {
+    (r.items || []).forEach(function(item) {
+      if (item.value !== 'fail' && item.value !== 'no') return;
+      itemMap[item.label] = (itemMap[item.label] || 0) + 1;
+    });
+  });
+
+  var entries = Object.keys(itemMap).map(function(l) { return { label: l, count: itemMap[l] }; })
+    .sort(function(a,b) { return b.count - a.count; }).slice(0, 15);
+
+  var labels  = entries.map(function(e) { return e.label; });
+  var counts  = entries.map(function(e) { return e.count; });
+
+  var canvasEl = document.getElementById('kpiChart');
+  var chartW = (canvasEl.parentElement ? canvasEl.parentElement.offsetWidth : 800) || 800;
+  canvasEl.width  = chartW;
+  canvasEl.height = 160;
+  var ctx = canvasEl.getContext('2d');
+
+  var r = parseInt('dc',16), g = parseInt('26',16), b = parseInt('26',16);
+
+  if (_kpiChart) { _kpiChart.destroy(); }
+  _kpiChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Failures',
+        data: counts,
+        backgroundColor: 'rgba(' + r + ',' + g + ',' + b + ',0.75)',
+        borderRadius: 4,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'white', borderColor: '#e2e8f0', borderWidth: 1,
+          titleColor: '#475569', bodyColor: '#1e293b', padding: 10,
+          callbacks: { label: function(c) { return '  ' + c.raw + ' failure' + (c.raw !== 1 ? 's' : ''); } }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { color: '#cbd5e1', font: { size: 9 }, maxRotation: 35, minRotation: 20 } },
+        y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { color: '#cbd5e1', font: { size: 10 } }, beginAtZero: true }
+      }
+    }
+  });
+}
+
 function renderKpiChart() {
   var meta = KPI_META[_kpiTileIndex];
+
+  // Issues tile uses item frequency chart instead of time-based
+  if (meta.freqChart) { renderKpiChartFrequency(); return; }
+
   var valueFn = getValueFn(meta.key);
 
   // Base dataset respects vehicle/driver/status filters — same non-date base for prev period lookup
@@ -938,6 +1348,7 @@ function applyFilters() {
   renderKPIs(filtered);
   // Delay on first render so MyGeotab iframe finishes its layout pass before canvas is measured
   setTimeout(renderKpiChart, 200);
+  renderCompliance();
 }
 
 function clearFilters() {
@@ -2891,6 +3302,7 @@ function openIssuesPanel() {
 
   body.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Loading issues…</div>';
   panel.style.display = 'flex';
+  switchIssuesTab('pipeline');
 
   // Load all IssueStatus records
   _api.call('Get', { typeName: 'AddInData', search: { addInId: ADDIN_ID } }, function(results) {
@@ -3128,6 +3540,91 @@ function openItemPhotoPopoverById(responseId, itemId) {
 
 function closeIssuesPanel() {
   document.getElementById('issuesPanel').style.display = 'none';
+}
+
+var _issuesActiveTab = 'pipeline';
+
+function switchIssuesTab(tab) {
+  _issuesActiveTab = tab;
+  var isPipeline = tab === 'pipeline';
+  document.getElementById('issuesPanelBody').style.display  = isPipeline ? 'block' : 'none';
+  document.getElementById('issuesFreqBody').style.display   = isPipeline ? 'none'  : 'block';
+  document.getElementById('issuesTab-pipeline').style.background  = isPipeline ? 'white' : 'rgba(255,255,255,0.2)';
+  document.getElementById('issuesTab-pipeline').style.color        = isPipeline ? '#0047BB' : 'white';
+  document.getElementById('issuesTab-frequency').style.background = isPipeline ? 'rgba(255,255,255,0.2)' : 'white';
+  document.getElementById('issuesTab-frequency').style.color       = isPipeline ? 'white' : '#0047BB';
+  document.getElementById('issuesRaiseBtn').style.display  = isPipeline ? '' : 'none';
+  document.getElementById('issuesExportBtn').style.display = isPipeline ? '' : 'none';
+  if (!isPipeline) renderFailureFrequency();
+}
+
+var _freqShowAll = false;
+
+function renderFailureFrequency() {
+  var body = document.getElementById('issuesFreqBody');
+  var sub  = document.getElementById('issuesPanelSubtitle');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Analysing failures…</div>';
+
+  // Aggregate failed items from filtered submissions
+  var itemMap = {}; // label → { total, vehicles: { vehicleName → count } }
+  filtered.forEach(function(r) {
+    (r.items || []).forEach(function(item) {
+      if (item.value !== 'fail' && item.value !== 'no') return;
+      if (!itemMap[item.label]) itemMap[item.label] = { total: 0, vehicles: {} };
+      itemMap[item.label].total++;
+      var v = r.deviceName || '—';
+      itemMap[item.label].vehicles[v] = (itemMap[item.label].vehicles[v] || 0) + 1;
+    });
+  });
+
+  var items = Object.keys(itemMap).map(function(label) {
+    return { label: label, total: itemMap[label].total, vehicles: itemMap[label].vehicles };
+  }).sort(function(a, b) { return b.total - a.total; });
+
+  if (!items.length) {
+    body.innerHTML = '<div style="text-align:center;padding:60px;color:#94a3b8;"><p style="font-size:16px;">No failed items in the current filter.</p></div>';
+    sub.textContent = '0 failed items';
+    return;
+  }
+
+  sub.textContent = items.length + ' failed item' + (items.length !== 1 ? 's' : '') + ' · ' + items.reduce(function(s,i){return s+i.total;},0) + ' total failures';
+
+  var html = '';
+  items.forEach(function(item) {
+    // Sort vehicles by count, cap at 10 unless showAll
+    var vehicleEntries = Object.keys(item.vehicles).map(function(v) {
+      return { name: v, count: item.vehicles[v] };
+    }).sort(function(a,b) { return b.count - a.count; });
+
+    var maxCount  = vehicleEntries[0] ? vehicleEntries[0].count : 1;
+    var showCount = _freqShowAll ? vehicleEntries.length : Math.min(10, vehicleEntries.length);
+    var shown     = vehicleEntries.slice(0, showCount);
+
+    html += '<div style="background:white;border-radius:16px;padding:20px;margin-bottom:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,0.05);">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
+    html += '<p style="font-size:14px;font-weight:700;color:#1e293b;margin:0;">' + item.label + '</p>';
+    html += '<span style="font-size:12px;font-weight:700;background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;">' + item.total + ' failure' + (item.total !== 1 ? 's' : '') + '</span>';
+    html += '</div>';
+
+    shown.forEach(function(v) {
+      var barPct = Math.round(v.count / maxCount * 100);
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+      html += '<p style="font-size:12px;color:#475569;margin:0;width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + v.name + '">' + v.name + '</p>';
+      html += '<div style="flex:1;background:#f1f5f9;border-radius:4px;height:20px;overflow:hidden;">';
+      html += '<div style="width:' + barPct + '%;height:100%;background:#dc2626;border-radius:4px;"></div>';
+      html += '</div>';
+      html += '<p style="font-size:12px;font-weight:700;color:#dc2626;margin:0;width:24px;text-align:right;">' + v.count + '</p>';
+      html += '</div>';
+    });
+
+    if (vehicleEntries.length > 10) {
+      html += '<button onclick="_freqShowAll=!_freqShowAll;renderFailureFrequency();" style="font-size:12px;color:#0047BB;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:5px 12px;cursor:pointer;margin-top:6px;">'
+            + (_freqShowAll ? 'Show top 10' : 'Show all ' + vehicleEntries.length + ' vehicles') + '</button>';
+    }
+    html += '</div>';
+  });
+
+  body.innerHTML = html;
 }
 
 // ── Photos Panel ──────────────────────────────────────────────────────────────

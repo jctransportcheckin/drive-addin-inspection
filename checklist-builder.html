@@ -196,15 +196,25 @@
     </div>
 
     <!-- Options -->
-    <div class="rounded-xl p-4 flex items-center justify-between" style="background:white;box-shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 14px rgba(0,0,0,0.05);">
-      <div>
-        <p class="text-sm font-semibold text-slate-700">Require end-of-check photos</p>
-        <p class="text-xs text-slate-400 mt-0.5">User must take 1 picture per side of vehicle before submitting</p>
+    <div class="rounded-xl p-4" style="background:white;box-shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 14px rgba(0,0,0,0.05);">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <p class="text-sm font-semibold text-slate-700">Require end-of-check photos</p>
+          <p class="text-xs text-slate-400 mt-0.5">User must take 1 picture per side of vehicle before submitting</p>
+        </div>
+        <label class="toggle ml-4">
+          <input type="checkbox" id="reqPhotos" checked>
+          <span class="slider"></span>
+        </label>
       </div>
-      <label class="toggle ml-4">
-        <input type="checkbox" id="reqPhotos" checked>
-        <span class="slider"></span>
-      </label>
+      <div class="border-t border-slate-100 pt-4">
+        <p class="text-sm font-semibold text-slate-700 mb-2">Trip type</p>
+        <div class="flex gap-2">
+          <button id="tripBtn-pre" onclick="setTripType('pre')" class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-all border-blue-500 bg-blue-600 text-white">Pre-trip</button>
+          <button id="tripBtn-post" onclick="setTripType('post')" class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-all border-slate-200 bg-white text-slate-500">Post-trip</button>
+          <button id="tripBtn-any" onclick="setTripType('any')" class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-all border-slate-200 bg-white text-slate-500">Any</button>
+        </div>
+      </div>
     </div>
 
     <!-- Items -->
@@ -318,6 +328,7 @@ let VEHICLE_GROUPS= []; // [{id, name}] groups present on at least one vehicle
 let templates     = [];
 let activeId      = null;
 let assignType    = 'driver';
+let tripType      = 'pre';
 let selected      = new Set();
 let searchQuery   = '';
 let activeGroups  = new Set();
@@ -377,7 +388,7 @@ function loadFromApi() {
       activeId = templates[0].id;
     } else {
       // Nothing saved yet — start with one blank template
-      const blank = { id: 'cl-' + Date.now(), name: 'New Checklist', assignTo: 'driver', assigned: [], requirePhotos: true, items: [] };
+      const blank = { id: 'cl-' + Date.now(), name: 'New Checklist', assignTo: 'driver', assigned: [], requirePhotos: true, tripType: 'pre', items: [] };
       templates = [blank];
       activeId = blank.id;
     }
@@ -484,11 +495,25 @@ function selectTemplate(id) {
   const searchEl = document.getElementById('assignSearch');
   if (searchEl) searchEl.value = '';
   document.getElementById('reqPhotos').checked = t.requirePhotos;
+  setTripType(t.tripType || 'pre');
   updateAssignButtons();
   renderAssignList();
   renderItems();
   renderApiPreview();
   renderSidebar();
+}
+
+// ── Trip type ─────────────────────────────────────────────────────────────────
+function setTripType(type) {
+  tripType = type;
+  ['pre','post','any'].forEach(function(k) {
+    var btn = document.getElementById('tripBtn-' + k);
+    if (!btn) return;
+    var active = k === type;
+    btn.style.background     = active ? '#2563eb' : 'white';
+    btn.style.color          = active ? 'white'   : '#64748b';
+    btn.style.borderColor    = active ? '#2563eb' : '#e2e8f0';
+  });
 }
 
 // ── Assign type ───────────────────────────────────────────────────────────────
@@ -769,6 +794,7 @@ function saveChecklist() {
   t.assignTo = assignType;
   t.assigned = [...selected];
   t.requirePhotos = document.getElementById('reqPhotos').checked;
+  t.tripType = tripType;
   renderSidebar();
 
   if (!_api) { toast('Saved locally (MyGeotab not connected)'); return; }
@@ -777,6 +803,7 @@ function saveChecklist() {
     type: 'ChecklistTemplate',
     id: t.id, name: t.name, assignTo: t.assignTo,
     assigned: t.assigned, requirePhotos: t.requirePhotos,
+    tripType: t.tripType || 'pre',
     items: t.items, updatedAt: new Date().toISOString()
   };
 
