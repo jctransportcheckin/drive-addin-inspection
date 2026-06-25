@@ -777,6 +777,7 @@ function newChecklist() {
 function deleteChecklist() {
   if (templates.length <= 1) { toast('Cannot delete the only checklist'); return; }
   const t = getActive();
+  if (!confirm('Delete "' + (t.name || 'this checklist') + '"? This cannot be undone.')) return;
   if (_api && t.addInDataId) {
     _api.call('Remove', {
       typeName: 'AddInData',
@@ -790,7 +791,20 @@ function deleteChecklist() {
 
 function saveChecklist() {
   const t = getActive();
-  t.name = document.getElementById('clName').value.trim() || 'Untitled';
+  const newName = document.getElementById('clName').value.trim() || 'Untitled';
+
+  // Duplicate name check — ignore the current template itself
+  const duplicate = templates.find(function(other) {
+    return other.id !== t.id && other.name.trim().toLowerCase() === newName.toLowerCase();
+  });
+  if (duplicate) {
+    toast('A checklist named "' + newName + '" already exists. Please use a different name.');
+    document.getElementById('clName').focus();
+    document.getElementById('clName').select();
+    return;
+  }
+
+  t.name = newName;
   t.assignTo = assignType;
   t.assigned = [...selected];
   t.requirePhotos = document.getElementById('reqPhotos').checked;
